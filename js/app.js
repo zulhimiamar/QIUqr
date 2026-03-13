@@ -1,18 +1,19 @@
-// ─── Logo baked in as base64 — no path/CORS issues ─────────
+// ─── Logo baked in as base64 — no path/CORS issues ──────────
 const LOGO_DATA_URL = 'data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABuANEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAj/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AIyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//9k=';
 
-// ─── State ──────────────────────────────────────────────────
-let lastCanvas = null;
+// Preview is always rendered at this fixed pixel size
+const PREVIEW_SIZE = 280;
+
+// ─── State ───────────────────────────────────────────────────
+let lastCanvas = null; // full-res, used for download only
 
 // ─── UI Bindings ─────────────────────────────────────────────
 document.getElementById('qr-size').addEventListener('input', e => {
   document.getElementById('size-label').textContent = e.target.value + 'px';
 });
-
 document.getElementById('logo-size').addEventListener('input', e => {
   document.getElementById('logo-size-label').textContent = e.target.value + '%';
 });
-
 document.getElementById('content').addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.ctrlKey) generate();
 });
@@ -28,20 +29,16 @@ const eccMap = {
 // ─── Generate ────────────────────────────────────────────────
 function generate() {
   const content = document.getElementById('content').value.trim();
-  const status  = document.getElementById('status');
-
-  if (!content) {
-    setStatus('err', '⚠ Please enter some content');
-    return;
-  }
+  if (!content) { setStatus('err', '⚠ Please enter some content'); return; }
 
   setStatus('', 'Generating…');
 
-  const size  = parseInt(document.getElementById('qr-size').value);
+  const size  = parseInt(document.getElementById('qr-size').value); // download size
   const dark  = document.getElementById('color-dark').value;
   const light = document.getElementById('color-light').value;
   const ecc   = document.getElementById('ecc').value;
 
+  // QRCode.js renders into a hidden off-screen div
   const container = document.getElementById('qr-render');
   container.innerHTML = '';
 
@@ -56,13 +53,20 @@ function generate() {
     });
 
     setTimeout(() => {
-      const canvas = container.querySelector('canvas');
-      if (!canvas) {
+      const sourceCanvas = container.querySelector('canvas');
+      if (!sourceCanvas) {
         setStatus('err', '✕ Failed — try shorter content or lower ECC');
         return;
       }
-      stampLogo(canvas, size, () => {
-        showOutput(canvas);
+
+      // Stamp logo onto the full-res source canvas (for download)
+      stampLogo(sourceCanvas, size, () => {
+        lastCanvas = sourceCanvas; // save for download
+
+        // Draw a scaled copy into the fixed preview canvas
+        drawPreview(sourceCanvas);
+
+        showOutput();
         setStatus('ok', '✓ Ready — scan to test!');
       });
     }, 100);
@@ -72,6 +76,18 @@ function generate() {
   }
 }
 
+// ─── Draw scaled preview ─────────────────────────────────────
+function drawPreview(sourceCanvas) {
+  const preview = document.getElementById('qr-preview');
+  preview.width  = PREVIEW_SIZE;
+  preview.height = PREVIEW_SIZE;
+  const ctx = preview.getContext('2d');
+  ctx.clearRect(0, 0, PREVIEW_SIZE, PREVIEW_SIZE);
+  // Scale full-res canvas down to fixed preview size — crisp
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(sourceCanvas, 0, 0, PREVIEW_SIZE, PREVIEW_SIZE);
+}
+
 // ─── Stamp logo onto canvas ───────────────────────────────────
 function stampLogo(canvas, size, done) {
   const logoPercent = parseInt(document.getElementById('logo-size').value) / 100;
@@ -79,9 +95,7 @@ function stampLogo(canvas, size, done) {
   const ctx         = canvas.getContext('2d');
 
   const img = new Image();
-
   img.onload = () => {
-    // Preserve aspect ratio within the max bounding box
     const maxDim = Math.round(size * logoPercent);
     const aspect = img.naturalWidth / img.naturalHeight;
     let logoW, logoH;
@@ -102,7 +116,7 @@ function stampLogo(canvas, size, done) {
     ctx.fillStyle = '#ffffff';
 
     if (rounded) {
-      const r  = Math.max(logoW, logoH) / 2 + pad;
+      const r = Math.max(logoW, logoH) / 2 + pad;
       ctx.beginPath();
       ctx.arc(size / 2, size / 2, r, 0, Math.PI * 2);
       ctx.fill();
@@ -116,12 +130,7 @@ function stampLogo(canvas, size, done) {
     done();
   };
 
-  img.onerror = () => {
-    console.error('Logo failed to load');
-    done();
-  };
-
-  // Use the embedded base64 — works everywhere, no server needed
+  img.onerror = () => { console.error('Logo failed to load'); done(); };
   img.src = LOGO_DATA_URL;
 }
 
@@ -140,10 +149,9 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-function showOutput(canvas) {
-  lastCanvas = canvas;
+function showOutput() {
   document.getElementById('placeholder').style.display = 'none';
-  document.getElementById('qr-container').style.display = 'flex';
+  document.getElementById('qr-preview').style.display  = 'block';
   document.getElementById('dl-row').classList.remove('output-hidden');
 }
 
@@ -153,12 +161,12 @@ function setStatus(type, msg) {
   el.textContent = msg;
 }
 
-// ─── Downloads ───────────────────────────────────────────────
+// ─── Downloads (use full-res lastCanvas) ─────────────────────
 function downloadPNG() {
   if (!lastCanvas) return;
-  const a  = document.createElement('a');
+  const a = document.createElement('a');
   a.download = 'qr-code.png';
-  a.href     = lastCanvas.toDataURL('image/png');
+  a.href = lastCanvas.toDataURL('image/png');
   a.click();
 }
 

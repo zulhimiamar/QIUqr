@@ -48,8 +48,9 @@
     </div>
 
     <div class="field">
-      <label>Output Size: <span id="size-label">400px</span></label>
+      <label>Download Size: <span id="size-label">400px</span></label>
       <input type="range" id="qr-size" min="200" max="800" step="50" value="400">
+      <div class="size-hint">Preview is always shown at fixed size</div>
     </div>
 
     <div class="field">
@@ -74,7 +75,8 @@
     <div class="panel-title">02 — Output</div>
     <div class="output-wrap">
 
-      <div class="qr-frame" id="qr-frame">
+      <!-- Fixed 280×280 preview frame -->
+      <div class="qr-frame">
         <div class="qr-placeholder" id="placeholder">
           <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
             <rect x="4" y="4" width="28" height="28" rx="2" stroke="#8a8070" stroke-width="3"/>
@@ -90,9 +92,8 @@
           </svg>
           <p>Your QR appears here</p>
         </div>
-        <div id="qr-container" style="display:none">
-          <div id="qr-render"></div>
-        </div>
+        <!-- Fixed preview canvas — always 280×280 on screen -->
+        <canvas id="qr-preview" width="280" height="280" style="display:none;"></canvas>
       </div>
 
       <div class="dl-row output-hidden" id="dl-row">
@@ -105,7 +106,9 @@
 
 </div>
 
-<!-- QRCode.js loaded from local copy -->
+<!-- Hidden off-screen div where QRCode.js renders the full-res canvas -->
+<div id="qr-render" style="position:absolute;left:-9999px;top:-9999px;visibility:hidden;"></div>
+
 <script src="js/qrcode.min.js"></script>
 <script src="js/app.js"></script>
 </body>
