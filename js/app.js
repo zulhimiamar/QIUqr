@@ -82,29 +82,48 @@ function stampLogo(canvas, size, done) {
   const logoPercent = parseInt(document.getElementById('logo-size').value) / 100;
   const rounded     = document.getElementById('rounded').checked;
   const ctx         = canvas.getContext('2d');
-  const logoW       = Math.round(size * logoPercent);
-  const x           = Math.round((size - logoW) / 2);
-  const y           = Math.round((size - logoW) / 2);
-  const pad         = Math.round(logoW * 0.12);
+  const pad         = Math.round(size * logoPercent * 0.12);
 
   const img = new Image();
 
   img.onload = () => {
+    // Preserve aspect ratio — fit logo within a square bounding box
+    const maxDim  = Math.round(size * logoPercent);
+    const aspect  = img.naturalWidth / img.naturalHeight;
+    let logoW, logoH;
+
+    if (aspect >= 1) {
+      // Wider than tall (or square)
+      logoW = maxDim;
+      logoH = Math.round(maxDim / aspect);
+    } else {
+      // Taller than wide
+      logoH = maxDim;
+      logoW = Math.round(maxDim * aspect);
+    }
+
+    // Center on canvas
+    const x = Math.round((size - logoW) / 2);
+    const y = Math.round((size - logoH) / 2);
+
     ctx.save();
 
-    // White backing behind logo
+    // White backing — sized to the actual logo dimensions
     ctx.fillStyle = '#ffffff';
     if (rounded) {
-      const r = (logoW + pad * 2) / 2;
+      // Circle that encloses the logo
+      const r  = Math.max(logoW, logoH) / 2 + pad;
+      const cx = size / 2;
+      const cy = size / 2;
       ctx.beginPath();
-      ctx.arc(x - pad + r, y - pad + r, r, 0, Math.PI * 2);
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      roundRect(ctx, x - pad, y - pad, logoW + pad * 2, logoW + pad * 2, 8);
+      roundRect(ctx, x - pad, y - pad, logoW + pad * 2, logoH + pad * 2, 8);
       ctx.fill();
     }
 
-    ctx.drawImage(img, x, y, logoW, logoW);
+    ctx.drawImage(img, x, y, logoW, logoH);
     ctx.restore();
     done();
   };
