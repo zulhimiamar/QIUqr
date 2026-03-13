@@ -1,6 +1,5 @@
 // ─── Logo baked in as base64 — no path/CORS issues ──────────
-// Logo loaded from assets folder — works on Live Server and GitHub Pages
-const LOGO_PATH = 'assets/logo.png';
+const LOGO_DATA_URL = ''; // <-- run: node encode-logo.js
 
 // Preview is always rendered at this fixed pixel size
 const PREVIEW_SIZE = 280;
@@ -131,8 +130,8 @@ function stampLogo(canvas, size, done) {
     done();
   };
 
-  img.onerror = () => { setStatus('err', '⚠ Logo not found — open via Live Server or GitHub Pages'); done(); };
-  img.src = LOGO_PATH + "?v=" + Date.now(); // cache-bust during dev
+  img.onerror = () => { setStatus('err', '⚠ Logo failed — run: node encode-logo.js'); done(); };
+  img.src = LOGO_DATA_URL;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
