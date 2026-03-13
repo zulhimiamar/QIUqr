@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+  <h1>QR <span>Studio</span></h1>
+  <p>/ Free · No server · GitHub Pages</p>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: Controls -->
+  <div class="panel">
+    <div class="panel-title">01 — Configure</div>
+
+    <div class="field">
+      <label>Content</label>
+      <textarea id="content" placeholder="Enter URL, text, email, phone…">https://</textarea>
+    </div>
+
+    <div class="field row2">
+      <div>
+        <label>Foreground</label>
+        <input type="color" id="color-dark" value="#0f0e0d">
+      </div>
+      <div>
+        <label>Background</label>
+        <input type="color" id="color-light" value="#ffffff">
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Error Correction</label>
+      <select id="ecc">
+        <option value="H">High — H (best with logo)</option>
+        <option value="Q">Medium-high — Q</option>
+        <option value="M">Medium — M</option>
+        <option value="L">Low — L</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Output Size: <span id="size-label">400px</span></label>
+      <input type="range" id="qr-size" min="200" max="800" step="50" value="400">
+    </div>
+
+    <div class="field">
+      <label>Logo Size: <span id="logo-size-label">22%</span></label>
+      <input type="range" id="logo-size" min="10" max="35" step="1" value="22">
+      <div class="size-hint">Keep below 30% for reliable scanning</div>
+    </div>
+
+    <div class="field">
+      <label class="check-row">
+        <input type="checkbox" id="rounded" checked>
+        Rounded logo background
+      </label>
+    </div>
+
+    <button class="btn-generate" onclick="generate()">Generate QR Code →</button>
+    <div class="status" id="status" style="margin-top:0.8rem;text-align:center"></div>
+  </div>
+
+  <!-- RIGHT: Output -->
+  <div class="panel">
+    <div class="panel-title">02 — Output</div>
+    <div class="output-wrap">
+
+      <div class="qr-frame" id="qr-frame">
+        <div class="qr-placeholder" id="placeholder">
+          <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+            <rect x="4" y="4" width="28" height="28" rx="2" stroke="#8a8070" stroke-width="3"/>
+            <rect x="12" y="12" width="12" height="12" rx="1" fill="#8a8070"/>
+            <rect x="48" y="4" width="28" height="28" rx="2" stroke="#8a8070" stroke-width="3"/>
+            <rect x="56" y="12" width="12" height="12" rx="1" fill="#8a8070"/>
+            <rect x="4" y="48" width="28" height="28" rx="2" stroke="#8a8070" stroke-width="3"/>
+            <rect x="12" y="56" width="12" height="12" rx="1" fill="#8a8070"/>
+            <rect x="48" y="48" width="8" height="8" fill="#8a8070"/>
+            <rect x="60" y="48" width="8" height="8" fill="#8a8070"/>
+            <rect x="48" y="60" width="8" height="8" fill="#8a8070"/>
+            <rect x="64" y="64" width="12" height="12" fill="#8a8070"/>
+          </svg>
+          <p>Your QR appears here</p>
+        </div>
+        <div id="qr-container" style="display:none">
+          <div id="qr-render"></div>
+        </div>
+      </div>
+
+      <div class="dl-row output-hidden" id="dl-row">
+        <button class="btn-dl btn-dl-png" onclick="downloadPNG()">↓ PNG</button>
+        <button class="btn-dl btn-dl-svg" onclick="downloadSVG()">↓ SVG</button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- QRCode.js loaded from local copy -->
+<script src="js/qrcode.min.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
