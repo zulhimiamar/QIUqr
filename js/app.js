@@ -1,11 +1,9 @@
-// ─── Logo baked in as base64 — no path/CORS issues ──────────
-const LOGO_DATA_URL = ''; // <-- run: node encode-logo.js
-
-// Preview is always rendered at this fixed pixel size
+// ─── Config ──────────────────────────────────────────────────
+const LOGO_PATH = 'assets/logo.png';
 const PREVIEW_SIZE = 280;
 
 // ─── State ───────────────────────────────────────────────────
-let lastCanvas = null; // full-res, used for download only
+let lastCanvas = null;
 
 // ─── UI Bindings ─────────────────────────────────────────────
 document.getElementById('qr-size').addEventListener('input', e => {
@@ -33,12 +31,11 @@ function generate() {
 
   setStatus('', 'Generating…');
 
-  const size  = parseInt(document.getElementById('qr-size').value); // download size
+  const size  = parseInt(document.getElementById('qr-size').value);
   const dark  = document.getElementById('color-dark').value;
   const light = document.getElementById('color-light').value;
   const ecc   = document.getElementById('ecc').value;
 
-  // QRCode.js renders into a hidden off-screen div
   const container = document.getElementById('qr-render');
   container.innerHTML = '';
 
@@ -59,13 +56,9 @@ function generate() {
         return;
       }
 
-      // Stamp logo onto the full-res source canvas (for download)
       stampLogo(sourceCanvas, size, () => {
-        lastCanvas = sourceCanvas; // save for download
-
-        // Draw a scaled copy into the fixed preview canvas
+        lastCanvas = sourceCanvas;
         drawPreview(sourceCanvas);
-
         showOutput();
         setStatus('ok', '✓ Ready — scan to test!');
       });
@@ -76,25 +69,24 @@ function generate() {
   }
 }
 
-// ─── Draw scaled preview ─────────────────────────────────────
+// ─── Draw scaled preview (always fixed 280×280) ───────────────
 function drawPreview(sourceCanvas) {
   const preview = document.getElementById('qr-preview');
   preview.width  = PREVIEW_SIZE;
   preview.height = PREVIEW_SIZE;
   const ctx = preview.getContext('2d');
-  ctx.clearRect(0, 0, PREVIEW_SIZE, PREVIEW_SIZE);
-  // Scale full-res canvas down to fixed preview size — crisp
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(sourceCanvas, 0, 0, PREVIEW_SIZE, PREVIEW_SIZE);
 }
 
-// ─── Stamp logo onto canvas ───────────────────────────────────
+// ─── Stamp logo onto full-res canvas ─────────────────────────
 function stampLogo(canvas, size, done) {
   const logoPercent = parseInt(document.getElementById('logo-size').value) / 100;
   const rounded     = document.getElementById('rounded').checked;
   const ctx         = canvas.getContext('2d');
 
   const img = new Image();
+
   img.onload = () => {
     const maxDim = Math.round(size * logoPercent);
     const aspect = img.naturalWidth / img.naturalHeight;
@@ -130,8 +122,13 @@ function stampLogo(canvas, size, done) {
     done();
   };
 
-  img.onerror = () => { setStatus('err', '⚠ Logo failed — run: node encode-logo.js'); done(); };
-  img.src = LOGO_DATA_URL;
+  img.onerror = () => {
+    // Logo failed (e.g. file:// protocol) — generate QR without logo
+    console.warn('Logo could not load — QR generated without logo. Use Live Server locally.');
+    done();
+  };
+
+  img.src = LOGO_PATH;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -161,7 +158,7 @@ function setStatus(type, msg) {
   el.textContent = msg;
 }
 
-// ─── Downloads (use full-res lastCanvas) ─────────────────────
+// ─── Downloads ───────────────────────────────────────────────
 function downloadPNG() {
   if (!lastCanvas) return;
   const a = document.createElement('a');
