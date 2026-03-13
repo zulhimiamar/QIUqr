@@ -3,7 +3,6 @@
 :root {
   --ink: #0f0e0d;
   --paper: #f5f0e8;
-  --cream: #ede8dc;
   --accent: #c8410a;
   --accent2: #1a4d3c;
   --muted: #8a8070;
@@ -19,7 +18,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Grain overlay */
 body::before {
   content: '';
   position: fixed;
@@ -198,7 +196,6 @@ input[type="checkbox"] {
 
 .qr-frame {
   width: 100%;
-  max-width: 420px;
   aspect-ratio: 1 / 1;
   background: white;
   border: 1.5px solid var(--border);
@@ -206,10 +203,9 @@ input[type="checkbox"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-  overflow: hidden;
   box-shadow: 4px 4px 0 var(--border);
-  padding: 16px;
+  padding: 20px;
+  overflow: hidden;
 }
 
 .qr-placeholder {
@@ -229,10 +225,21 @@ input[type="checkbox"] {
   text-transform: uppercase;
 }
 
+#qr-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
+#qr-container canvas {
   display: block;
-  max-width: 248px;
-  max-height: 248px;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 .dl-row {
@@ -240,7 +247,6 @@ input[type="checkbox"] {
   grid-template-columns: 1fr 1fr;
   gap: 0.7rem;
   width: 100%;
-  max-width: 420px;
 }
 
 .btn-dl {
@@ -256,20 +262,9 @@ input[type="checkbox"] {
   border: 1.5px solid;
 }
 
-.btn-dl-png {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-
+.btn-dl-png { background: var(--accent); color: white; border-color: var(--accent); }
 .btn-dl-png:hover { background: #a83508; border-color: #a83508; }
-
-.btn-dl-svg {
-  background: transparent;
-  color: var(--ink);
-  border-color: var(--border);
-}
-
+.btn-dl-svg { background: transparent; color: var(--ink); border-color: var(--border); }
 .btn-dl-svg:hover { border-color: var(--ink); }
 
 .output-hidden { display: none !important; }
@@ -281,5 +276,5 @@ input[type="checkbox"] {
   letter-spacing: 0.08em;
 }
 
-.status.ok { color: var(--accent2); }
+.status.ok  { color: var(--accent2); }
 .status.err { color: var(--accent); }

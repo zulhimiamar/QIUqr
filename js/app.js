@@ -1,12 +1,10 @@
-// ─── Config ────────────────────────────────────────────────
-// Path to your logo inside the project. Just replace the file
-// in assets/ and keep the same filename, or update this path.
-const LOGO_PATH = 'assets/logo.png';
+// ─── Logo baked in as base64 — no path/CORS issues ─────────
+const LOGO_DATA_URL = 'data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCABuANEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAj/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AIyAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//9k=';
 
-// ─── State ─────────────────────────────────────────────────
+// ─── State ──────────────────────────────────────────────────
 let lastCanvas = null;
 
-// ─── UI Bindings ────────────────────────────────────────────
+// ─── UI Bindings ─────────────────────────────────────────────
 document.getElementById('qr-size').addEventListener('input', e => {
   document.getElementById('size-label').textContent = e.target.value + 'px';
 });
@@ -15,12 +13,11 @@ document.getElementById('logo-size').addEventListener('input', e => {
   document.getElementById('logo-size-label').textContent = e.target.value + '%';
 });
 
-// Ctrl+Enter shortcut
 document.getElementById('content').addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.ctrlKey) generate();
 });
 
-// ─── ECC Map ────────────────────────────────────────────────
+// ─── ECC Map ─────────────────────────────────────────────────
 const eccMap = {
   H: QRCode.CorrectLevel.H,
   Q: QRCode.CorrectLevel.Q,
@@ -28,7 +25,7 @@ const eccMap = {
   L: QRCode.CorrectLevel.L
 };
 
-// ─── Generate ───────────────────────────────────────────────
+// ─── Generate ────────────────────────────────────────────────
 function generate() {
   const content = document.getElementById('content').value.trim();
   const status  = document.getElementById('status');
@@ -58,14 +55,12 @@ function generate() {
       correctLevel: eccMap[ecc]
     });
 
-    // QRCode.js renders async
     setTimeout(() => {
       const canvas = container.querySelector('canvas');
       if (!canvas) {
         setStatus('err', '✕ Failed — try shorter content or lower ECC');
         return;
       }
-
       stampLogo(canvas, size, () => {
         showOutput(canvas);
         setStatus('ok', '✓ Ready — scan to test!');
@@ -77,46 +72,39 @@ function generate() {
   }
 }
 
-// ─── Stamp logo onto canvas ──────────────────────────────────
+// ─── Stamp logo onto canvas ───────────────────────────────────
 function stampLogo(canvas, size, done) {
   const logoPercent = parseInt(document.getElementById('logo-size').value) / 100;
   const rounded     = document.getElementById('rounded').checked;
   const ctx         = canvas.getContext('2d');
-  const pad         = Math.round(size * logoPercent * 0.12);
 
   const img = new Image();
 
   img.onload = () => {
-    // Preserve aspect ratio — fit logo within a square bounding box
-    const maxDim  = Math.round(size * logoPercent);
-    const aspect  = img.naturalWidth / img.naturalHeight;
+    // Preserve aspect ratio within the max bounding box
+    const maxDim = Math.round(size * logoPercent);
+    const aspect = img.naturalWidth / img.naturalHeight;
     let logoW, logoH;
 
     if (aspect >= 1) {
-      // Wider than tall (or square)
       logoW = maxDim;
       logoH = Math.round(maxDim / aspect);
     } else {
-      // Taller than wide
       logoH = maxDim;
       logoW = Math.round(maxDim * aspect);
     }
 
-    // Center on canvas
-    const x = Math.round((size - logoW) / 2);
-    const y = Math.round((size - logoH) / 2);
+    const x   = Math.round((size - logoW) / 2);
+    const y   = Math.round((size - logoH) / 2);
+    const pad = Math.round(Math.min(logoW, logoH) * 0.15);
 
     ctx.save();
-
-    // White backing — sized to the actual logo dimensions
     ctx.fillStyle = '#ffffff';
+
     if (rounded) {
-      // Circle that encloses the logo
       const r  = Math.max(logoW, logoH) / 2 + pad;
-      const cx = size / 2;
-      const cy = size / 2;
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.arc(size / 2, size / 2, r, 0, Math.PI * 2);
       ctx.fill();
     } else {
       roundRect(ctx, x - pad, y - pad, logoW + pad * 2, logoH + pad * 2, 8);
@@ -129,15 +117,15 @@ function stampLogo(canvas, size, done) {
   };
 
   img.onerror = () => {
-    // If logo fails to load (e.g. file not added yet), just finish without it
-    console.warn('Logo not found at: ' + LOGO_PATH + '. Add your PNG to the assets/ folder.');
+    console.error('Logo failed to load');
     done();
   };
 
-  img.src = LOGO_PATH;
+  // Use the embedded base64 — works everywhere, no server needed
+  img.src = LOGO_DATA_URL;
 }
 
-// ─── Helpers ────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -155,7 +143,7 @@ function roundRect(ctx, x, y, w, h, r) {
 function showOutput(canvas) {
   lastCanvas = canvas;
   document.getElementById('placeholder').style.display = 'none';
-  document.getElementById('qr-container').style.display = 'block';
+  document.getElementById('qr-container').style.display = 'flex';
   document.getElementById('dl-row').classList.remove('output-hidden');
 }
 
@@ -168,9 +156,9 @@ function setStatus(type, msg) {
 // ─── Downloads ───────────────────────────────────────────────
 function downloadPNG() {
   if (!lastCanvas) return;
-  const a = document.createElement('a');
+  const a  = document.createElement('a');
   a.download = 'qr-code.png';
-  a.href = lastCanvas.toDataURL('image/png');
+  a.href     = lastCanvas.toDataURL('image/png');
   a.click();
 }
 
